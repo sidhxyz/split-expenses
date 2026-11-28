@@ -660,14 +660,16 @@ html,body{height:100%!important;overflow:hidden!important}
 @keyframes pgr{from{transform:translateX(-26px);opacity:.4}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.pgin-l,.pgin-r{animation:none}}
 </style>
-<style id="perf">
-/* scroll performance: render only rows near the viewport */
-.rbody .row,.pane .row{content-visibility:auto;contain-intrinsic-size:auto 76px}
-/* touch phones: no hover shadow repaint after a tap/scroll */
-@media (hover:none){.row:hover{box-shadow:var(--sh1)}.gcard:hover{box-shadow:0 5px 12px rgba(40,60,220,.22)}}
-/* keep scrolling on the compositor */
-.home,.rbody,.pane{will-change:scroll-position}
+<style id="emptyfix">
+.home .gempty2{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:26px 20px 22px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px rgba(20,23,59,.04),0 8px 24px rgba(20,23,59,.06);cursor:pointer}
+.gempty2 .ge-ic{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;background:var(--tint);color:var(--pri);margin-bottom:6px}
+.gempty2 h2{font-size:18px;line-height:1.25;color:var(--ink);margin:0}
+.gempty2 p{margin:0;max-width:260px;font-size:13px;line-height:1.5;color:var(--mute)}
+.gempty2 .ge-btn{display:inline-flex;align-items:center;justify-content:center;width:100%;max-width:260px;min-height:46px;margin-top:14px;border-radius:12px;background:var(--pri);color:#fff;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(51,71,255,.25)}
+.gempty2:active .ge-btn{transform:scale(.98)}
+.gempty2:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
 </style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -749,9 +751,9 @@ if(S.groups.some(g=>g.name==='Sample group'))S.exDone=1;
 const tIds=[];S.trash.forEach(t=>{if(t.k==='g'){tIds.push(t.g.id);t.people.forEach(q=>tIds.push(q.id));t.expenses.forEach(q=>tIds.push(q.id))}else if(t.k==='p')tIds.push(t.p.id);else tIds.push(t.e.id)});
 const mx=Math.max.apply(null,[0].concat(S.people.concat(S.expenses,S.groups).map(x=>x.id),tIds));
 if(!(S.next>mx))S.next=mx+1;
-if(!S.groups.length)S.groups.push({id:S.next++,name:'My group'});
-const d=S.groups[0].id;
-S.people.forEach(p=>{if(!p.g)p.g=d});S.expenses.forEach(e=>{if(!e.g)e.g=d});
+if(S.groups.length)S.hadG=1;
+const d=S.groups.length?S.groups[0].id:0;
+if(d){S.people.forEach(p=>{if(!p.g)p.g=d});S.expenses.forEach(e=>{if(!e.g)e.g=d})}
 if(!S.groups.some(g=>g.id===S.cur))S.cur=d;
 S.log=Array.isArray(S.log)?S.log.filter(x=>x&&typeof x.t==='number'&&typeof x.k==='string'):actBackfill();
 }
@@ -999,7 +1001,7 @@ t.style.fontSize=Math.max(8,Math.min(13,11.5*bw/tw)).toFixed(2)+'px';
 }
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitTag);
 addEventListener('resize',fitTag);
-var mCnt={all:0,un:0,set:0,rec:0,pay:0},ddOpen=null,ddCtx=0,mvF='exp';const isM=k=>k==='gset'||k==='aset'||k==='xm'||k==='mm'||k==='tm';
+var mCnt={all:0,un:0,set:0,rec:0,pay:0},ddOpen=null,ddCtx=0,mvF='pay';const isM=k=>k==='gset'||k==='aset'||k==='xm'||k==='mm'||k==='tm';
 const DD_CHEV='<svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const DD_CHECK='<svg class="ck" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const _si=b=>'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+b+'</svg>';
@@ -1028,7 +1030,7 @@ if(k==='tm')return[{v:'tsum',l:'Summary'}];
 if(k==='xm')return[{v:'edx',l:'Edit'},{v:'vx',l:'Summary'},{v:'del',l:'Delete',dng:1,sep:1}];
 if(k==='mm'){const p=S.people.find(x=>x.id===ddCtx);return[{v:'settle',l:'Settle'},{v:'viewm',l:'Summary'}].concat(p&&p.mobile?[{v:'mcall',l:'Call'}]:[],[{v:'editm',l:'Edit member',dng:1,sep:1}])}
 if(k==='gset')return[{v:'pin',l:(cg()&&cg().pin)?'Unpin group':'Pin group',dis:!S.cur},{v:'simple',l:'Simplify payments',tog:!!S.simple},{v:'pdf',l:'Export group'},{v:'rng',l:'Rename group',dis:!S.cur},{v:'delg',l:'Delete group',dng:1,sep:1,dis:!S.cur}];
-if(k==='aset')return[{v:'export',l:'Export backup'},{v:'import',l:'Import backup'},{v:'refresh',l:'Refresh app'}];
+if(k==='aset')return[{v:'export',l:'Export backup'},{v:'import',l:'Import backup'}].concat(isStandalone()?[]:[{v:'install',l:'Install app'}],[{v:'refresh',l:'Refresh app'}]);
 if(k==='gsort')return[['def','Default order'],['new','Newest first'],['hi','Highest spending'],['az','Name A–Z'],['za','Name Z–A']].map(x=>({v:x[0],l:x[1],sel:(S.gsort||'def')===x[0]}));
 if(k==='gsel')return S.groups.map(g=>({v:String(g.id),l:g.name,sel:S.cur===g.id})).concat([{v:'new',l:'Create new group',plus:1}]);
 if(k==='mflt')return[['all','All members'],['un','Unsettled'],['set','Settled'],['rec','To receive'],['pay','To pay']].map(x=>({v:x[0],l:x[1],n:mCnt[x[0]],sel:mFlt===x[0],ic:FLT_IC[x[0]]}));
@@ -1066,7 +1068,7 @@ setTimeout(go,2500);
 }
 function ddPick(k,v){
 ddClose();
-if(k==='aset'){if(v==='refresh'){appRefresh();return}const g=gProxy();g.dataset.a=v;delete g.dataset.id;g.click()}
+if(k==='aset'){if(v==='refresh'){appRefresh();return}if(v==='install'){ddClose();instGo();return}const g=gProxy();g.dataset.a=v;delete g.dataset.id;g.click()}
 else if(k==='gset'){if(v==='refresh'){appRefresh();return}if(v==='simple'){S.simple=!S.simple;save();render()}else if(v==='pin'){const g=cg();if(g){g.pin=!g.pin;save();render()}}else{const g=gProxy();g.dataset.a=v;delete g.dataset.id;g.click()}}
 else if(k==='tm'){const key=sheet&&sheet.tk&&sheet.tk[ddCtx];if(key)showDetails(key)}
 else if(k==='xm'||k==='mm'){const g=gProxy();g.dataset.a=v;g.dataset.id=ddCtx;g.click()}
@@ -1087,6 +1089,7 @@ return '<div class="row">'+av(r.p.id)+'<div class="g"><b>'+esc(r.p.name)+'</b><s
 return '<div class="dsk">'+bar+'<section class="sum"><span class="sun"></span><small>Total spending</small><b>'+fmt(tot)+'</b><div class="meta">'+stack+'<span>'+n+(n===1?' expense':' expenses')+' · '+ps.length+(ps.length===1?' member':' members')+'</span></div><button type="button" class="sunbtn" data-a="addx">Add expense</button></section>'+bal+'</div>';
 }
 function render(){ddClose();try{histSync()}catch(e){}
+if(!S.groups.length&&page==='work')page='home';
 const hm0=document.querySelector('.home'),hTop=hm0&&window._pg===page?hm0.scrollTop:0;window._pg=page;
 const pTop=window._pp===S.cur?Array.prototype.map.call(document.querySelectorAll('.pane'),q=>q.scrollTop):[];window._pp=S.cur;
 const bk=backupStrip();
@@ -1120,6 +1123,7 @@ if(so==='hi')return tot(b.g)-tot(a.g)||a.i-b.i;
 if(so==='az')return a.g.name.localeCompare(b.g.name,undefined,{sensitivity:'base'});
 if(so==='za')return b.g.name.localeCompare(a.g.name,undefined,{sensitivity:'base'});
 return a.i-b.i}).map(x=>x.g);
+if(!S.groups.length)return '<section class="gempty2" data-a="newg" role="button" tabindex="0" aria-label="Create your first group"><span class="ge-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><h2>Create your first group</h2><p>Add members, log shared expenses and see exactly who owes whom.</p><span class="ge-btn">+ Create group</span></section>';
 if(!l.length)return '<p class="note gnone">No group found.</p>';
 return l.map(g=>{const ex=S.expenses.filter(e=>e.g===g.id),t=ex.reduce((a,e)=>a+e.amt,0),pp=PG(g.id).slice(0,5);
 return '<section class="sum gcard" data-a="gopen" data-id="'+g.id+'" role="button" tabindex="0" aria-label="Open '+esc(g.name)+'"><span class="sun"></span><button type="button" class="gset gcg" data-a="ddopen" data-k="gset" data-id="'+g.id+'" aria-haspopup="menu" aria-expanded="false" aria-label="Settings for '+esc(g.name)+'" title="Settings">'+GEAR_SVG+'</button><small>'+(g.pin?'<span class="gpin" title="Pinned">'+PIN_SVG+'</span>':'')+'Spending in '+esc(g.name)+'</small><b>'+fmt(t)+'</b><div class="meta">'+(pp.length?'<span class="stack">'+pp.map(x=>av(x.id)).join('')+'</span>':'')+'<span>'+ex.length+(ex.length===1?' expense':' expenses')+'</span><button type="button" class="adx" data-a="addx" data-id="'+g.id+'" aria-label="Add expense to '+esc(g.name)+'">+ Add expense</button></div></section>'}).join('')}
@@ -1204,7 +1208,7 @@ return t+'\nThanks,\nTeam Bright Expense Split\nBy Sidharth Bright Networks';
 const waLink=(mobile,msg)=>'https://wa.me/'+intl(mobile)+'?text='+encodeURIComponent(msg);
 function wSheet(){
 const p=S.people.find(x=>x.id===sheet.id);
-return hd('Share on WhatsApp')+'<p class="mut">Add <b>'+esc(p.name)+'</b>’s mobile number to send the settlement summary.</p><label for="wm">Mobile number</label><input id="wm" type="tel" inputmode="numeric" maxlength="20" pattern="[0-9]*" placeholder="9876543210" autocomplete="off"><div class="err" id="we" role="alert"></div><button class="pri w" data-a="wsave">Save and send</button>';
+return hd('Share on WhatsApp')+'<p class="mut">Add <b>'+esc(p.name)+'</b>’s mobile number to send the settlement summary.</p><label for="wm">Mobile number</label><input id="wm" type="tel" inputmode="numeric" maxlength="60" pattern="[0-9]*" placeholder="9876543210" autocomplete="off"><div class="err" id="we" role="alert"></div><button class="pri w" data-a="wsave">Save and send</button>';
 }
 function sharePrep(){
 const k=sheet.share.k,d=pstat().find(x=>pk(x)===k),r=d.t===sheet.id;
@@ -1281,7 +1285,7 @@ const bar=pt.length
 :'<div class="paidbar mvb"><button class="cx" data-a="editm" data-id="'+p.id+'">Edit member</button><button data-a="mvsettle" data-id="'+p.id+'">Settle due</button></div>';
 return '<div class="mvfix"><div class="top vtop"><div><h2>'+esc(p.name)+'</h2><small>'+esc(gname(p.g))+'</small></div><div class="mvhb"><button type="button" class="mvwa" data-a="msum" data-id="'+p.id+'" aria-label="Share summary" title="Share summary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button><button class="x" data-a="close" aria-label="Close">×</button></div></div>'+
 '<div class="vsum2 mvs"><div><small>Total expenditure</small><b class="ok">'+fmt(tot)+'</b></div><div><small>Total paid</small><b class="bad">'+fmt(paid)+'</b></div><div><small>'+(b>0?'You will receive':b<0?'You will pay':'All settled')+'</small><b class="'+(b>0?'ok':b<0?'bad':'mut')+'">'+fmt(b)+'</b></div></div>'+
-'<div class="mvf" role="tablist" aria-label="Summary view">'+[['exp','Expenses'],['paid','Paid'],['pay','To pay'],['rec','To receive']].map(x=>'<button type="button" role="tab" class="'+(f===x[0]?'on':'')+'" aria-selected="'+(f===x[0])+'" data-a="mvf" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div></div><div class="mvscroll">'+
+'<div class="mvf" role="tablist" aria-label="Summary view">'+[['pay','To pay'],['rec','To receive'],['paid','Paid'],['exp','Expenses']].map(x=>'<button type="button" role="tab" class="'+(f===x[0]?'on':'')+'" aria-selected="'+(f===x[0])+'" data-a="mvf" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div></div><div class="mvscroll">'+
 (f==='pay'?secPay():'')+
 (f==='rec'?secP('To receive',get,'f','Receive from ','ok','Nothing to receive.'):'')+
 (f==='exp'?secE('Expenses',ex.filter(e=>sh(e)>0),'Share',e=>fmt(sh(e)),e=>'Bill '+fmt(e.amt)+' · Paid by '+esc(nm(e.paidBy))):'')+
@@ -1304,7 +1308,7 @@ return hd(sheet.id?'Rename group':'New group')+'<label for="gn">Group name</labe
 function mSheet(){
 const nw=!sheet.id,p=nw?{name:sheet.name}:S.people.find(x=>x.id===sheet.id),nUsed=nw?0:S.expenses.filter(e=>e.paidBy===p.id||e.shares.some(s=>s.u===p.id)).length;
 return hd(nw?'New member':'Member profile')+'<label for="mn">Name</label><input id="mn" maxlength="20" value="'+esc(p.name)+'">'+
-'<label for="mm">Mobile number</label><input id="mm" type="tel" inputmode="numeric" maxlength="20" pattern="[0-9]*" placeholder="9876543210" value="'+esc(p.mobile||'')+'" autocomplete="off">'+
+'<label for="mm">Mobile number</label><input id="mm" type="tel" inputmode="numeric" maxlength="60" pattern="[0-9]*" placeholder="9876543210" value="'+esc(p.mobile||'')+'" autocomplete="off">'+
 '<label for="mu">UPI ID</label><div class="upiw"><input id="mu" placeholder="name@bank" value="'+esc(p.upi||'')+'" autocapitalize="off" autocomplete="off" spellcheck="false"><button type="button" class="scbtn" data-a="scanupi" aria-label="Scan UPI QR code" title="Scan UPI QR"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 12h8"/></svg></button></div>'+
 '<div class="err" id="me" role="alert"></div>'+
 '<button class="pri w" data-a="msave">'+(nw?'Save member':'Save profile')+'</button>'+(nw?'':'<div class="rmsec">'+(nUsed?'<p>'+esc(p.name)+' is linked to '+nUsed+(nUsed===1?' expense':' expenses')+', so '+esc(p.name)+' can’t be removed. Delete '+(nUsed===1?'that expense':'those expenses')+' first.</p>':'')+'<button class="rmb" data-a="rmp" data-id="'+p.id+'"'+(nUsed?' disabled':'')+'>Remove member</button></div>');
@@ -1373,7 +1377,7 @@ if(sheet.t==='g'&&!old){const i=$('#gn');if(i)i.focus()}
 if(sheet.t==='w'&&!old){const i=$('#wm');if(i)i.focus()}
 if(sheet.t==='m'&&!sheet.id&&!old){const i=$(sheet.name?'#mm':'#mn');if(i)i.focus()}
 }
-function openMV(id){if(S.people.some(x=>x.id===id)){mvF='exp';sheet={t:'mv',id:id,pend:[],meth:{},settle:false};show()}}
+function openMV(id){if(S.people.some(x=>x.id===id)){mvF='pay';sheet={t:'mv',id:id,pend:[],meth:{},settle:false};show()}}
 function closeSheet(){sheet=null;show();render()}
 function resetAll(){
 const tr=(S.trash||[]).slice(),nx=S.next||1,now=new Date().toISOString();
@@ -1396,7 +1400,7 @@ p.hidden=false;
 async function instGo(){
 if(instEv){const e=instEv;instEv=null;closePop();try{e.prompt();await e.userChoice}catch(x){}render();return}
 const o=$('#pop');
-o.innerHTML='<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="pt"><h2 id="pt">Add to Home Screen</h2><p>1. Tap the <b>Share</b> button in your browser.<br>2. Choose <b>Add to Home Screen</b>.<br>3. Tap <b>Add</b>.</p><button class="yes" data-a="pd-close">Got it</button></div>';
+o.innerHTML='<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="pt"><h2 id="pt">'+(isIos()?'Add to Home Screen':'Install app')+'</h2><p>'+(isIos()?'1. Tap the <b>Share</b> button in your browser.<br>2. Choose <b>Add to Home Screen</b>.<br>3. Tap <b>Add</b>.':'1. Tap the <b>&#8942;</b> menu in your browser.<br>2. Choose <b>Install app</b> (or <b>Add to Home screen</b>).<br>3. Tap <b>Install</b>.')+'</p><button class="yes" data-a="pd-close">Got it</button></div>';
 o.hidden=false;
 }
 var DBX_APP='bls4inxts9bda26',DBX_FILE='/bright-expense-split-backup.json',DBX_LS='bestie_split_dbx',
@@ -1562,6 +1566,8 @@ return r.json();
 function dbxBusyUi(){return !!(Date.now()-(window._lsc||0)<1500||sheet||draft||!$('#pop').hidden||!$('#ov').hidden||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)))}
 async function dbxSync(){
 if(dbx.busy)return;
+if(Date.now()-(window._lsc||0)<1500)return; // never compete with a scroll; the 4s poll retries
+
 if(dbxSyncing){dbxAgain=true;return}
 dbxSyncing=true;
 try{
@@ -1793,7 +1799,7 @@ const a=b.dataset.a,id=+b.dataset.id;
 if(ddWas&&a==='gopen')return;
 if(a==='tab'){tab=b.dataset.v;render()}
 else if(a==='gopen'){S.cur=id;save();page='work';tab='exp';render()}
-else if(a==='page'){if(page!==b.dataset.v){page=b.dataset.v;render()}}
+else if(a==='page'){if(b.dataset.v==='work'&&!S.groups.length){if(page!=='home'){page='home';render()}sheet={t:'g',id:0,name:''};show();return}if(page!==b.dataset.v){page=b.dataset.v;render()}}
 else if(a==='afilter'){sheet={t:'f'};show()}
 else if(a==='apay'){const x=ALIST[+b.dataset.n],y=livePay(x);if(y){sheet={t:'y',x:x,y:y};show()}}
 else if(a==='yundo'){sheet.yt=(sheet.yt||0)+1;if(sheet.yt<3){b.textContent='Tap '+(3-sheet.yt)+' more time'+(3-sheet.yt>1?'s':'')+' to undo';return}const i=S.settlements.indexOf(sheet.y);if(i>=0){S.settlements.splice(i,1);save()}closeSheet()}
@@ -1849,7 +1855,7 @@ else if(a==='msum'){
 const p=S.people.find(x=>x.id===id);if(!p)return;
 if(!p.mobile){sheet={t:'w',id:id,sum:1};show();return}
 window.location.href=waLink(p.mobile,summaryMsg(p))}
-else if(a==='viewm'){if(S.people.some(x=>x.id===id)){mvF='exp';sheet={t:'mv',id:id,pend:[],meth:{},settle:false};show()}}
+else if(a==='viewm'){if(S.people.some(x=>x.id===id)){mvF='pay';sheet={t:'mv',id:id,pend:[],meth:{},settle:false};show()}}
 else if(a==='mvsettle'){if(sheet&&sheet.t==='mv'){sheet.settle=true;mvF='pay';show()}}
 else if(a==='mvqr'){if(sheet&&sheet.t==='mv')showQR(b.dataset.k)}
 else if(a==='mvtick'){if(sheet&&sheet.t==='mv'){const k=b.dataset.k,x=sheet.pend.indexOf(k);if(x>=0){sheet.pend.splice(x,1);delete sheet.meth[k];show()}else showQR(k)}}
@@ -2069,7 +2075,7 @@ else if(t.id==='gsel'){if(t.value==='new'){t.value=String(S.cur);sheet={t:'g',id
 else if(t.id==='xp'){draft.payer=+t.value}
 else if(t.id==='xg'){draft.g=+t.value;const ps=PG(draft.g);draft.payer=ps[0].id;draft.ids=ps.map(p=>p.id);show()}
 });
-document.addEventListener('input',e=>{const t=e.target;if(['wm','bmob','mm','smob'].indexOf(t.id)<0)return;const d=t.value.replace(/\D/g,''),v=(d.length>10?cleanMob(d):d).slice(0,10);if(t.value!==v)t.value=v});
+document.addEventListener('input',e=>{const t=e.target;if(['wm','bmob','mm','smob'].indexOf(t.id)<0)return;const d=t.value.replace(/\D/g,''),bulk=/paste|drop|replacement/i.test(e.inputType||'')||(e.data&&e.data.length>1),v=d.length>10?(bulk?d.slice(-10):cleanMob(d).slice(0,10)):d;if(t.value!==v)t.value=v});
 document.addEventListener('input',e=>{if(!draft||!sheet||sheet.t!=='x')return;if(e.target.id==='xt')draft.title=e.target.value;if(e.target.id==='xa'){draft.amt=e.target.value;autoFill();hint()}if(e.target.dataset.uid){const u=e.target.dataset.uid;(draft.man=draft.man||{})[u]=!!e.target.value.trim();draft.vals[u]=e.target.value;autoFill();hint()}});
 function example(){
 const ex=S.groups.find(g=>g.name==='Sample group');
@@ -2243,7 +2249,7 @@ window.scanUPI=open;
 </script>
 <script>
 (function(){
-var order=['exp','paid','pay','rec'],x0=0,y0=0,t0=0,ok=false,ov=document.getElementById('ov');
+var order=['pay','rec','paid','exp'],x0=0,y0=0,t0=0,ok=false,ov=document.getElementById('ov');
 if(!ov)return;
 ov.addEventListener('touchstart',function(e){
 var t=e.target;ok=!!(t&&t.closest&&t.closest('.mvscroll'))&&e.touches.length===1;
